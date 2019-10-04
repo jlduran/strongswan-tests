@@ -132,6 +132,14 @@ vici_body()
 {
 	sst_init
 
+	cp $(atf_get_srcdir)/files/moon/etc/rc.d/strongswan ${TMPDIR}/strongswan
+	jexec moon mv ${TMPDIR}/strongswan /usr/local/etc/rc.d
+	jexec moon chmod 0555 /usr/local/etc/rc.d/strongswan
+
+	cp $(atf_get_srcdir)/files/moon/etc/swanctl/conf.d/dummy.conf \
+		${TMPDIR}/dummy.conf
+	jexec moon mv ${TMPDIR}/dummy.conf /usr/local/etc/swanctl/conf.d
+
 	jexec moon sysrc strongswan_enable=YES
 	jexec moon sysrc strongswan_interface=VICI
 
