@@ -4,5 +4,6 @@ syntax(2)
 
 test_suite("strongSwan")
 
+include("freebsd/Kyuafile")
 include("route_based/Kyuafile")
 include("swanctl/Kyuafile")
