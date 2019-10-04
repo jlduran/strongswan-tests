@@ -4,5 +4,4 @@ syntax(2)
 
 test_suite("strongSwan")
 
-include("rc_script/Kyuafile")
-include("updown/Kyuafile")
+atf_test_program{name="updown", }
