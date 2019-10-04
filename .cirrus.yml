@@ -12,7 +12,7 @@ task:
   timeout_in: 90m
   install_script:
   - pkg install -y kyua strongswan
-  test_script:
-  - kyua test -k $CIRRUS_WORKING_DIR/Kyuafile
   debug_script:
   - kyua debug -k $CIRRUS_WORKING_DIR/Kyuafile tests/freebsd/rc_script/rc_script:vici
+  test_script:
+  - kyua test -k $CIRRUS_WORKING_DIR/Kyuafile
