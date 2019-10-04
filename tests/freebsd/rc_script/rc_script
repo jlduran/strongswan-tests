@@ -231,7 +231,7 @@ vici_body()
 	jexec moon sleep 1
 	charon_pid=$(jexec moon cat /var/run/charon.pid)
 	jexec moon kill -9 $charon_pid
-	jexec moon sleep 2 # daemon(8) restarts after 1 second
+	jexec moon sleep 5
 	atf_check \
 		-o match:"/usr/local/libexec/ipsec/charon" \
 		jexec moon ps auxww
