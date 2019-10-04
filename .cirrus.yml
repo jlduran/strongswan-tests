@@ -1,0 +1,16 @@
+# $FreeBSD$
+
+freebsd_instance:
+  image: freebsd-12-0-release-amd64
+  cpu: 8
+  memory: 24G
+
+env:
+  CIRRUS_CLONE_DEPTH: 1
+
+task:
+  timeout_in: 90m
+  install_script:
+  - pkg install -y kyua strongswan
+  test_script:
+  - kyua test -k $CIRRUS_WORKING_DIR/Kyuafile
