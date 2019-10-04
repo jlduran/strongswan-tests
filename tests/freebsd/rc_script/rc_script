@@ -1,0 +1,250 @@
+#! /usr/libexec/atf-sh
+# $FreeBSD$
+
+: ${TMPDIR=/tmp}
+
+. $(atf_get_srcdir)/../../../scripts/utils.subr
+
+atf_test_case stroke cleanup
+
+stroke_head()
+{
+	atf_set descr "Test stroke rc script"
+	atf_set require.user root
+}
+
+stroke_body()
+{
+	sst_init
+
+	cp $(atf_get_srcdir)/files/moon/etc/rc.d/strongswan ${TMPDIR}/strongswan
+	jexec moon mv ${TMPDIR}/strongswan /usr/local/etc/rc.d
+	jexec moon chmod 0555 /usr/local/etc/rc.d/strongswan
+
+	jexec moon sysrc strongswan_enable=YES
+	jexec moon sysrc strongswan_interface=stroke
+
+	# start (started)
+	jexec moon service strongswan start
+	atf_check -s not-exit:0 \
+		-e match:"strongswan already running?" \
+		jexec moon service strongswan start
+	jexec moon service strongswan stop
+
+	# start (stopped)
+	atf_check \
+		-o match:"Starting strongswan." \
+		-e match:"Starting strongSwan" \
+		jexec moon service strongswan start
+	jexec moon service strongswan stop
+
+	# stop (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"Stopping strongswan." \
+		-o match:"Waiting for PIDS" \
+		jexec moon service strongswan stop
+
+	# stop (stopped)
+	atf_check -s not-exit:0 \
+		-e match:"strongswan not running?" \
+		jexec moon service strongswan stop
+
+	# restart (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"Stopping strongswan." \
+		-o match:"Waiting for PIDS" \
+		-o match:"Starting strongswan." \
+		-e match:"Starting strongSwan" \
+		jexec moon service strongswan restart
+	jexec moon service strongswan stop
+
+	# restart (stopped)
+	atf_check \
+		-o match:"Starting strongswan." \
+		-e match:"Starting strongSwan" \
+		jexec moon service strongswan restart
+	jexec moon service strongswan stop
+
+	# status (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"Security Associations" \
+		jexec moon service strongswan status
+	jexec moon service strongswan stop
+
+	# status (stopped)
+	atf_check -s not-exit:0 \
+		jexec moon service strongswan status
+
+	# statusall (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"Status of IKE charon daemon" \
+		-o match:"Connections" \
+		-o match:"Security Associations" \
+		jexec moon service strongswan statusall
+	jexec moon service strongswan stop
+
+	# statusall (stopped)
+	atf_check -s not-exit:0 \
+		jexec moon service strongswan statusall
+
+	# reload (started)
+	jexec moon service strongswan start
+	atf_check \
+		-e match:"Reloading strongSwan IPsec configuration..." \
+		jexec moon service strongswan reload
+	jexec moon service strongswan stop
+
+	# reload (stopped)
+	atf_check -s not-exit:0 \
+		-e match:"starter is not running" \
+		jexec moon service strongswan reload
+
+	# respawn charon process
+	jexec moon service strongswan start
+	jexec moon sleep 1
+	charon_pid=$(jexec moon cat /var/run/charon.pid)
+	jexec moon kill -9 $charon_pid
+	jexec moon sleep 5
+	atf_check \
+		-o match:"/usr/local/libexec/ipsec/charon" \
+		jexec moon ps auxww
+	jexec moon service strongswan stop
+}
+
+stroke_cleanup()
+{
+	sst_cleanup
+}
+
+atf_test_case vici cleanup
+
+vici_head()
+{
+	atf_set descr "Test VICI rc script"
+	atf_set require.user root
+}
+
+vici_body()
+{
+	sst_init
+
+	jexec moon sysrc strongswan_enable=YES
+	jexec moon sysrc strongswan_interface=VICI
+
+	# start (started)
+	jexec moon service strongswan start
+	atf_check -s not-exit:0 \
+		-e match:"strongswan already running?" \
+		jexec moon service strongswan start
+	jexec moon service strongswan stop
+
+	# start (stopped)
+	atf_check \
+		-o match:"Starting strongswan." \
+		-o match:"successfully loaded [[:digit:]]+ connections" \
+		-e match:"authorities found" \
+		-e match:"pools found" \
+		jexec moon service strongswan start
+	jexec moon service strongswan stop
+
+	# stop (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"Stopping strongswan." \
+		-o match:"Waiting for PIDS" \
+		jexec moon service strongswan stop
+
+	# stop (stopped)
+	atf_check -s not-exit:0 \
+		-e match:"strongswan not running?" \
+		jexec moon service strongswan stop
+
+	# restart (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"Stopping strongswan." \
+		-o match:"Waiting for PIDS" \
+		-o match:"Starting strongswan." \
+		-o match:"successfully loaded [[:digit:]]+ connections" \
+		-e match:"authorities found" \
+		-e match:"pools found" \
+		jexec moon service strongswan restart
+	jexec moon service strongswan stop
+
+	# restart (stopped)
+	atf_check \
+		-o match:"Starting strongswan." \
+		-o match:"successfully loaded [[:digit:]]+ connections" \
+		-e match:"authorities found" \
+		-e match:"pools found" \
+		jexec moon service strongswan restart
+	jexec moon service strongswan stop
+
+	# status (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"uptime" \
+		-o match:"worker threads" \
+		-o match:"loaded plugins" \
+		jexec moon service strongswan status
+	jexec moon service strongswan stop
+
+	# status (stopped)
+	atf_check -s not-exit:0 \
+		-e match:"strongswan not running?" \
+		jexec moon service strongswan status
+
+	# statusall (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"uptime" \
+		-o match:"worker threads" \
+		-o match:"loaded plugins" \
+		jexec moon service strongswan statusall
+	jexec moon service strongswan stop
+
+	# statusall (stopped)
+	atf_check -s not-exit:0 \
+		-e match:"strongswan not running?" \
+		jexec moon service strongswan statusall
+
+	# reload (started)
+	jexec moon service strongswan start
+	atf_check \
+		-o match:"successfully loaded [[:digit:]]+ connections" \
+		-e match:"authorities found" \
+		-e match:"pools found" \
+		jexec moon service strongswan reload
+	jexec moon service strongswan stop
+
+	# reload (stopped)
+	atf_check -s not-exit:0 \
+		-e match:"strongswan not running?" \
+		jexec moon service strongswan reload
+
+	# respawn charon process
+	jexec moon service strongswan start
+	jexec moon sleep 1
+	charon_pid=$(jexec moon cat /var/run/charon.pid)
+	jexec moon kill -9 $charon_pid
+	jexec moon sleep 2 # daemon(8) restarts after 1 second
+	atf_check \
+		-o match:"/usr/local/libexec/ipsec/charon" \
+		jexec moon ps auxww
+	jexec moon service strongswan stop
+}
+
+vici_cleanup()
+{
+	sst_cleanup
+}
+
+atf_init_test_cases()
+{
+	atf_add_test_case stroke
+	atf_add_test_case vici
+}

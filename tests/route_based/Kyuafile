@@ -1,0 +1,7 @@
+-- strongSwan Testing Framework
+
+syntax(2)
+
+test_suite("strongSwan")
+
+include("net2net_vti/Kyuafile")

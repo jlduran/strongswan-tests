@@ -1,0 +1,50 @@
+#! /usr/libexec/atf-sh
+# $FreeBSD$
+
+. $(atf_get_srcdir)/../../../scripts/utils.subr
+
+atf_test_case "net2net_ed25519" "cleanup"
+
+description=$(atf_get_srcdir)/description.txt
+#evaltest=$(atf_get_srcdir)/evaltest.dat
+#posttest=$(atf_get_srcdir)/posttest.dat
+#pretest=$(atf_get_srcdir)/pretest.dat
+#test=$(atf_get_srcdir)/test.dat
+
+net2net_ed25519_head()
+{
+	atf_set descr ${description}
+	atf_set require.user root
+}
+
+net2net_ed25519_body()
+{
+	#sst_pretest
+	#sst_evaltest
+	sst_init
+
+	#[ $1 -eq 4 ] && sst_v4_setup || sst_v6_setup
+
+	#if [ $1 -eq 4 ]; then
+	#	atf_check -o ignore jexec alice ping -c 1 10.2.0.10
+	#else
+	#	atf_check -o ignore jexec alice ping6 -c 1 fec2::10
+	#fi
+	sst_v6_setup
+
+	jexec moon route -6 add -net fec2::/16 fec0::2
+	jexec sun route -6 add -net fec1::/16 fec0::1
+
+	atf_skip "net2net_ed25519 4"
+	atf_check -o ignore jexec alice ping6 -c 1 fec2::10
+}
+
+net2net_ed25519_cleanup()
+{
+	sst_cleanup
+}
+
+atf_init_test_cases()
+{
+	atf_add_test_case "net2net_ed25519"
+}

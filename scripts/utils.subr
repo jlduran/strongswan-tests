@@ -1,0 +1,186 @@
+# $FreeBSD$
+# strongSwan testing environment utility functions
+##
+
+. $(atf_get_srcdir)/../../../scripts/vnet.subr
+
+sst_init()
+{
+	if ! sysctl -q kern.features.ipsec >/dev/null ; then
+		atf_skip "This test requires ipsec"
+	fi
+
+	vnet_init
+
+	sst_host_init
+	sst_alice_init
+	sst_bob_init
+	sst_moon_init
+	sst_sun_init
+	sst_winnetou_init
+}
+
+sst_host_init()
+{
+	ifconfig tap0 create
+	ifconfig tap1 create
+	ifconfig tap2 create
+
+	ifconfig bridge0 create
+	ifconfig bridge1 create
+	ifconfig bridge2 create
+
+	ifconfig bridge0 name test-br0
+	ifconfig bridge1 name test-br1
+	ifconfig bridge2 name test-br2
+
+	ifconfig test-br0 addm tap0 up
+	ifconfig test-br1 addm tap1 up
+	ifconfig test-br2 addm tap2 up
+}
+
+sst_alice_init()
+{
+	epair_alice_0=$(vnet_mkepair)
+	epair_alice_1=$(vnet_mkepair)
+	ifconfig ${epair_alice_0}a up
+	ifconfig ${epair_alice_0}b up
+	ifconfig ${epair_alice_1}a up
+	ifconfig ${epair_alice_1}b up
+
+	ifconfig ${epair_alice_0}a name alice-eth0
+	ifconfig ${epair_alice_1}a name alice-eth1
+	sed -i '' -e "s/${epair_alice_0}a/alice-eth0/g" created_interfaces.lst
+	sed -i '' -e "s/${epair_alice_1}a/alice-eth1/g" created_interfaces.lst
+	vnet_mkjail alice alice-eth0 alice-eth1
+
+	ifconfig test-br1 addm ${epair_alice_0}b
+	ifconfig test-br0 addm ${epair_alice_1}b
+}
+
+sst_bob_init()
+{
+	epair_bob=$(vnet_mkepair)
+	ifconfig ${epair_bob}a up
+	ifconfig ${epair_bob}b up
+
+	ifconfig ${epair_bob}a name bob-eth0
+	sed -i '' -e "s/${epair_bob}a/bob-eth0/g" created_interfaces.lst
+	vnet_mkjail bob bob-eth0
+
+	ifconfig test-br2 addm ${epair_bob}b
+}
+
+sst_moon_init()
+{
+	epair_moon_0=$(vnet_mkepair)
+	epair_moon_1=$(vnet_mkepair)
+	ifconfig ${epair_moon_0}a up
+	ifconfig ${epair_moon_0}b up
+	ifconfig ${epair_moon_1}a up
+	ifconfig ${epair_moon_1}b up
+
+	ifconfig ${epair_moon_0}a name moon-eth0
+	ifconfig ${epair_moon_1}a name moon-eth1
+	sed -i '' -e "s/${epair_moon_0}a/moon-eth0/g" created_interfaces.lst
+	sed -i '' -e "s/${epair_moon_1}a/moon-eth1/g" created_interfaces.lst
+	vnet_mkjail moon moon-eth0 moon-eth1
+
+	ifconfig test-br0 addm ${epair_moon_0}b
+	ifconfig test-br1 addm ${epair_moon_1}b
+}
+
+sst_sun_init()
+{
+	epair_sun_0=$(vnet_mkepair)
+	epair_sun_1=$(vnet_mkepair)
+	ifconfig ${epair_sun_0}a up
+	ifconfig ${epair_sun_0}b up
+	ifconfig ${epair_sun_1}a up
+	ifconfig ${epair_sun_1}b up
+
+	ifconfig ${epair_sun_0}a name sun-eth0
+	ifconfig ${epair_sun_1}a name sun-eth1
+	sed -i '' -e "s/${epair_sun_0}a/sun-eth0/g" created_interfaces.lst
+	sed -i '' -e "s/${epair_sun_1}a/sun-eth1/g" created_interfaces.lst
+	vnet_mkjail sun sun-eth0 sun-eth1
+
+	ifconfig test-br0 addm ${epair_sun_0}b
+	ifconfig test-br2 addm ${epair_sun_1}b
+}
+
+sst_winnetou_init()
+{
+	epair_winnetou=$(vnet_mkepair)
+	ifconfig ${epair_winnetou}a up
+	ifconfig ${epair_winnetou}b up
+
+	ifconfig ${epair_winnetou}a name winnetou-eth0
+	sed -i '' -e "s/${epair_winnetou}a/winnetou-eth0/g" created_interfaces.lst
+	vnet_mkjail winnetou winnetou-eth0
+
+	ifconfig test-br0 addm ${epair_winnetou}b
+}
+
+sst_v4_setup()
+{
+	ifconfig tap0 inet 192.168.0.254/24 up
+	ifconfig tap1 inet 10.1.0.254/16 up
+	ifconfig tap2 inet 10.2.0.254/16 up
+
+	jexec alice ifconfig alice-eth0 10.1.0.10/16 up
+	jexec alice ifconfig alice-eth1 192.168.0.50/24 up
+	jexec bob ifconfig bob-eth0 10.2.0.10/16 up
+	jexec moon ifconfig moon-eth0 192.168.0.1/24 up
+	jexec moon ifconfig moon-eth1 10.1.0.1/16 up
+	jexec sun ifconfig sun-eth0 192.168.0.2/24 up
+	jexec sun ifconfig sun-eth1 10.2.0.1/16 up
+	jexec winnetou ifconfig winnetou-eth0 192.168.0.150/24 up
+
+	jexec moon sysctl net.inet.ip.forwarding=1
+	jexec sun sysctl net.inet.ip.forwarding=1
+
+	jexec moon route add default 192.168.0.254
+	jexec sun route add default 192.168.0.254
+	jexec alice route add default 10.1.0.1
+	jexec bob route add default 10.2.0.1
+	jexec winnetou route add default 192.168.0.254
+}
+
+sst_v6_setup()
+{
+	ifconfig tap0 inet6 fec0::254/16 up
+	ifconfig tap1 inet6 fec1::254/16 up
+	ifconfig tap2 inet6 fec2::254/16 up
+
+	jexec alice ifconfig alice-eth0 inet6 fec1::10/16 up no_dad
+	jexec alice ifconfig alice-eth1 inet6 fec0::5/16 up no_dad
+	jexec bob ifconfig bob-eth0 inet6 fec2::10/64 up no_dad
+	jexec moon ifconfig moon-eth0 inet6 fec0::1/16 up no_dad
+	jexec moon ifconfig moon-eth1 inet6 fec1::1/16 up no_dad
+	jexec sun ifconfig sun-eth0 inet6 fec0::2/16 up no_dad
+	jexec sun ifconfig sun-eth1 inet6 fec2::1/16 up no_dad
+	jexec winnetou ifconfig winnetou-eth0 inet6 fec0::150/16 up no_dad
+
+	jexec moon sysctl net.inet6.ip6.forwarding=1
+	jexec sun sysctl net.inet6.ip6.forwarding=1
+
+	jexec moon route -6 add default fec0::254
+	jexec sun route -6 add default fec0::254
+	jexec alice route -6 add default fec1::1
+	jexec bob route -6 add default fec2::1
+	jexec winnetou route -6 add default fec0::254
+}
+
+sst_cleanup()
+{
+	ifconfig test-br0 destroy
+	ifconfig test-br1 destroy
+	ifconfig test-br2 destroy
+
+	ifconfig tap0 destroy
+	ifconfig tap1 destroy
+	ifconfig tap2 destroy
+
+	vnet_cleanup
+}

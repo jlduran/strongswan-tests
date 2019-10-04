@@ -1,0 +1,7 @@
+-- strongSwan Testing Framework
+
+syntax(2)
+
+test_suite("strongSwan")
+
+atf_test_program{name="net2net_vti", }

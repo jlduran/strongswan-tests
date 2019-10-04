@@ -1,0 +1,54 @@
+#! /usr/libexec/atf-sh
+# $FreeBSD$
+
+. $(atf_get_srcdir)/../../../scripts/utils.subr
+
+atf_test_case "net2net_vti" "cleanup"
+
+description=$(atf_get_srcdir)/description.txt
+#evaltest=$(atf_get_srcdir)/evaltest.dat
+#posttest=$(atf_get_srcdir)/posttest.dat
+#pretest=$(atf_get_srcdir)/pretest.dat
+#test=$(atf_get_srcdir)/test.dat
+
+net2net_vti_head()
+{
+	atf_set descr ${description}
+	atf_set require.user root
+}
+
+net2net_vti_body()
+{
+	sst_init
+
+	sst_v4_setup
+
+	jexec moon ifconfig ipsec0 create reqid 42
+	jexec moon ifconfig ipsec0 inet tunnel 192.168.0.1 192.168.0.2
+	jexec moon ifconfig ipsec0 inet 10.3.0.1/30 10.3.0.2
+	jexec moon route add -net 10.2.0.0/16 -iface ipsec0
+
+	jexec sun ifconfig ipsec0 create reqid 1337
+	jexec sun ifconfig ipsec0 inet tunnel 192.168.0.2 192.168.0.1
+	jexec sun ifconfig ipsec0 inet 10.3.0.2/30 10.3.0.1
+	jexec sun route add -net 10.1.0.0/16 -iface ipsec0
+
+	jexec moon service strongswan start
+	jexec sun service strongswan start
+
+	jexec moon swanctl --initiate --child net-net
+
+	atf_skip "net2net_vti 4"
+	#atf_expect_connection moon gw-gw
+	#atf_expect_connection sun gw-gw
+}
+
+net2net_vti_cleanup()
+{
+	sst_cleanup
+}
+
+atf_init_test_cases()
+{
+	atf_add_test_case "net2net_vti"
+}
