@@ -1,0 +1,52 @@
+#! /usr/libexec/atf-sh
+# $FreeBSD$
+
+: ${TMPDIR=/tmp}
+
+. $(atf_get_srcdir)/../../../scripts/utils.subr
+
+atf_test_case ipfw cleanup
+
+ipfw_head()
+{
+	atf_set descr "Test ipfw firewall updown script"
+	atf_set require.user root
+}
+
+ipfw_body()
+{
+	sst_init
+
+	atf_skip "ipfw updown script"
+}
+
+ipfw_cleanup()
+{
+	sst_cleanup
+}
+
+atf_test_case pf cleanup
+
+pf_head()
+{
+	atf_set descr "Test pf firewall updown script"
+	atf_set require.user root
+}
+
+pf_body()
+{
+	sst_init
+
+	atf_skip "pf updown script"
+}
+
+pf_cleanup()
+{
+	sst_cleanup
+}
+
+atf_init_test_cases()
+{
+	atf_add_test_case ipfw
+	atf_add_test_case pf
+}
