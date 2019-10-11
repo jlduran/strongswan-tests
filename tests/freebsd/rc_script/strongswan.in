@@ -45,6 +45,7 @@ case $strongswan_interface in
 	charon_command="%%PREFIX%%/libexec/ipsec/charon"
 	swanctl="%%PREFIX%%/sbin/swanctl"
 	pidfile=/var/run/daemon.charon.pid
+	charon_pidfile=/var/run/charon.pid
 	command_args="-rS -P ${pidfile} ${charon_command} --use-syslog"
 
 	start_cmd=strongswan_swanctl_start
@@ -63,10 +64,18 @@ esac
 
 strongswan_swanctl_start()
 {
+	local _waitmax=5
+
 	check_startmsgs && echo "Starting ${name}."
 
 	${command} ${command_args}
-	sleep 1
+
+	# Need to wait for charon to finish startup,
+	# else vici socket is unreadable
+	while [ ! -f ${charon_pidfile} ] && [ ${_waitmax} -gt 0 ]; do
+		sleep 1
+		_waitmax=$((_waitmax - 1))
+	done
 }
 
 strongswan_swanctl()
