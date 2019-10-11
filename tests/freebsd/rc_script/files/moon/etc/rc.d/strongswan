@@ -42,11 +42,11 @@ case $strongswan_interface in
 
 [Ss][Ww][Aa][Nn][Cc][Tt][Ll]|[Vv][Ii][Cc][Ii])
 	command="/usr/sbin/daemon"
-	charon_command="/usr/local/libexec/ipsec/charon"
+	charon="/usr/local/libexec/ipsec/charon"
 	swanctl="/usr/local/sbin/swanctl"
 	pidfile=/var/run/daemon.charon.pid
 	charon_pidfile=/var/run/charon.pid
-	command_args="-rS -P ${pidfile} ${charon_command} --use-syslog"
+	command_args="-rS -P ${pidfile} ${charon} --use-syslog"
 
 	start_cmd=strongswan_swanctl_start
 	start_postcmd="${swanctl} --load-all --noprompt"
