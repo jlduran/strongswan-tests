@@ -12,8 +12,8 @@
 # strongswan_interface (string):
 #	Set the control interface to use.
 #	Valid options are:
-#	"stroke" for the old ipsec/starter interface
-#	"vici" for the newer swanctl interface
+#	"stroke" for the old ipsec/startr interface
+#	"vici" for the newer swanctl intrface
 #	Default is "%%INTERFACE%%"
 
 . /etc/rc.subr
@@ -30,12 +30,16 @@ load_rc_config $name
 
 extra_commands="reload statusall"
 
+charon_command=%%PREFIX%%/libexec/ipsec/charon
+charon_pidfile=/var/run/charon.pid
+swanctl_command=%%PREFIX%%/sbin/swanctl
+
 case $strongswan_interface in
 [Ss][Tt][Rr][Oo][Kk][Ee])
 	# "stroke"
 	command="%%PREFIX%%/sbin/ipsec"
-	procname="%%PREFIX%%/libexec/ipsec/starter"
 	start_precmd=command_args=start
+	stop_cmd="${command} stop"
 	status_cmd="${command} status"
 	reload_cmd="${command} reload"
 	statusall_cmd="${command} statusall"
@@ -45,36 +49,27 @@ case $strongswan_interface in
 	# "vici"
 	command=/usr/sbin/daemon
 	pidfile=/var/run/daemon-charon.pid
-	charon_command=%%PREFIX%%/libexec/ipsec/charon
-	charon_pidfile=/var/run/charon.pid
-	swanctl_command=%%PREFIX%%/sbin/swanctl
-	command_args="-rS -P ${pidfile} ${charon_command} --use-syslog"
+	command_args="-S -P ${pidfile} ${charon_command} --use-syslog"
 
 	required_files=${charon_command}
 	extra_commands="reload statusall"
 
-	start_cmd=${name}_swanctl_start
-	start_postcmd="${swanctl_command} --load-all --noprompt"
-	reload_cmd="strongswan_swanctl --reload-settings"
-	reload_postcmd=$start_postcmd
-	status_cmd="strongswan_swanctl --stats"
-	statusall_cmd="strongswan_swanctl --stats --list-conns --list-sas"
+	start_postcmd=${name}_swanctl_poststart
+	status_cmd="${swanctl_command} --stats"
+	reload_cmd=${name}_swanctl_reload
+	statusall_cmd=${name}_swanctl_statusall
 	;;
 
-*)
+	*)
 	# "default"
 	warn "\$strongswan_interface setting is invalid - options supported are \"stroke\" or \"vici\"."
 	exit 1
 	;;
 esac
 
-strongswan_swanctl_start()
+strongswan_swanctl_poststart()
 {
 	local _waitmax=5
-
-	check_startmsgs && echo "Starting ${name}."
-
-	${command} ${command_args}
 
 	# Need to wait for charon to finish startup,
 	# else vici socket is unreadable
@@ -82,25 +77,21 @@ strongswan_swanctl_start()
 		sleep 1
 		_waitmax=$((_waitmax - 1))
 	done
+
+	${swanctl_command} --load-all --noprompt
 }
 
-strongswan_swanctl()
+strongswan_swanctl_reload()
 {
-	local _commands _c
+	${swanctl_command} --reload-settings
+	${swanctl_command} --load-all --noprompt
+}
 
-	_commands="$@"
-	if [ -z "$_commands" ]; then
-		return
-	fi
-
-	if [ -z "$rc_pid" ]; then
-		_run_rc_notrunning
-		return 1
-	fi
-
-	for _c in $_commands; do
-		${swanctl_command} $_c
-	done
+strongswan_swanctl_statusall()
+{
+	${swanctl_command} --stats
+	${swanctl_command} --list-conns
+	${swanctl_command} --list-sas
 }
 
 run_rc_command "$1"

@@ -12,7 +12,7 @@ task:
   - pkg install -qy strongswan
   # Uncomment the following lines and add the failing test in case of a
   # failing task
-  #debug_script:
-  #- kyua debug -k $CIRRUS_WORKING_DIR/Kyuafile test_case
-  test_script:
-  - kyua test -k $CIRRUS_WORKING_DIR/Kyuafile
+  debug_script:
+  - kyua debug -k $CIRRUS_WORKING_DIR/Kyuafile tests/freebsd/rc_script/rc_script:vici
+  #test_script:
+  #- kyua test -k $CIRRUS_WORKING_DIR/Kyuafile
