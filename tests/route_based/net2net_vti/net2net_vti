@@ -19,6 +19,7 @@ net2net_vti_head()
 
 net2net_vti_body()
 {
+	atf_skip "net2net_vti 4"
 	sst_init
 
 	sst_v4_setup
@@ -38,7 +39,6 @@ net2net_vti_body()
 
 	jexec moon swanctl --initiate --child net-net
 
-	atf_skip "net2net_vti 4"
 	#atf_expect_connection moon gw-gw
 	#atf_expect_connection sun gw-gw
 }
