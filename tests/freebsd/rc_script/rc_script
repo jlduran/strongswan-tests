@@ -35,75 +35,80 @@ stroke_body()
 		-o match:"Starting strongswan." \
 		-e match:"Starting strongSwan" \
 		jexec moon service strongswan start
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# stop (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"Stopping strongswan." \
 		-o match:"Waiting for PIDS" \
 		jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# stop (stopped)
 	atf_check -s not-exit:0 \
 		-e match:"strongswan not running?" \
 		jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# restart (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"Stopping strongswan." \
 		-o match:"Waiting for PIDS" \
 		-o match:"Starting strongswan." \
 		-e match:"Starting strongSwan" \
 		jexec moon service strongswan restart
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# restart (stopped)
 	atf_check \
 		-o match:"Starting strongswan." \
 		-e match:"Starting strongSwan" \
 		jexec moon service strongswan restart
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# status (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"Security Associations" \
 		jexec moon service strongswan status
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# status (stopped)
 	atf_check -s not-exit:0 \
 		jexec moon service strongswan status
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# statusall (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"Status of IKE charon daemon" \
 		-o match:"Connections" \
 		-o match:"Security Associations" \
 		jexec moon service strongswan statusall
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# statusall (stopped)
 	atf_check -s not-exit:0 \
 		jexec moon service strongswan statusall
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# reload (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-e match:"Reloading strongSwan IPsec configuration..." \
 		jexec moon service strongswan reload
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# reload (stopped)
 	atf_check -s not-exit:0 \
 		-e match:"starter is not running" \
 		jexec moon service strongswan reload
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# respawn charon process
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	jexec moon sleep 1
 	charon_pid=$(jexec moon cat /var/run/charon.pid)
 	jexec moon kill -9 $charon_pid
@@ -111,7 +116,7 @@ stroke_body()
 	atf_check \
 		-o match:"/usr/local/libexec/ipsec/charon" \
 		jexec moon ps auxww
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 }
 
 stroke_cleanup()
@@ -247,13 +252,16 @@ vici_body()
 
 	# respawn charon process
 	#
-	# NB: this implies that the daemon gets supervised
-	# while this was true for the old stroke, it is
+	# NB: This implies that the daemon gets supervised and
+	# *restarted*.  While this was true for the old stroke, it is
 	# not true for vici as it is at the moment.
-	# systemd-based systems supervise the process
-	# and respawn accordingly.
-	# This should be up for debate, nobody wants to loose
-	# their VPN connections.
+	# A user switching from stoke to vici would expect this
+	# behavior, as well as users switching from strongswan on
+	# Linux-based systems; charon-systemd supervises the process
+	# and respawns accordingly.
+	# While, this should be up for debate, I guess it is one of the
+	# reasons why some users are still reluctant to switch to vici
+	# (nobody wants to loose their VPN connections).
 	jexec moon service strongswan start > /dev/null 2>&1 || true
 	jexec moon sleep 1
 	charon_pid=$(jexec moon cat /var/run/charon.pid)
