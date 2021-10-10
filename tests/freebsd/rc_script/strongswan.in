@@ -1,6 +1,5 @@
 #!/bin/sh
 # Start or stop strongswan
-# $FreeBSD$
 
 # PROVIDE: strongswan
 # REQUIRE: DAEMON
@@ -13,51 +12,58 @@
 # strongswan_interface (string):
 #	Set the control interface to use.
 #	Valid options are:
-#	"starter" or "stroke" for the old ipsec/starter interface
-#	"swanctl" or "vici" for the newer swanctl interface
-#	Default is "swanctl"
+#	"stroke" for the old ipsec/starter interface
+#	"vici" for the newer swanctl interface
+#	Default is "%%INTERFACE%%"
 
 . /etc/rc.subr
 
 name=strongswan
 desc="Strongswan IPsec startup script"
+required_modules="ipsec"
 rcvar=strongswan_enable
 
 load_rc_config $name
 
-strongswan_enable=${strongswan_enable:-"NO"}
-strongswan_interface=${strongswan_interface:-"swanctl"}
+: ${strongswan_enable:=NO}
+: ${strongswan_interface:="%%INTERFACE%%"}
 
 extra_commands="reload statusall"
 
 case $strongswan_interface in
-[Ss][Tt][Aa][Rr][Tt][Ee][Rr]|[Ss][Tt][Rr][Oo][Kk][Ee])
+[Ss][Tt][Rr][Oo][Kk][Ee])
+	# "stroke"
 	command="%%PREFIX%%/sbin/ipsec"
 	procname="%%PREFIX%%/libexec/ipsec/starter"
 	start_precmd=command_args=start
-	reload_cmd="${command} reload" # non-rc.subr reload command
-	status_cmd="${command} status" # non-rc.subr status command
+	status_cmd="${command} status"
+	reload_cmd="${command} reload"
 	statusall_cmd="${command} statusall"
 	;;
 
-[Ss][Ww][Aa][Nn][Cc][Tt][Ll]|[Vv][Ii][Cc][Ii])
-	command="/usr/sbin/daemon"
-	charon_command="%%PREFIX%%/libexec/ipsec/charon"
-	swanctl="%%PREFIX%%/sbin/swanctl"
-	pidfile=/var/run/daemon.charon.pid
+[Vv][Ii][Cc][Ii])
+	# "vici"
+	command=/usr/sbin/daemon
+	pidfile=/var/run/daemon-charon.pid
+	charon_command=%%PREFIX%%/libexec/ipsec/charon
 	charon_pidfile=/var/run/charon.pid
+	swanctl_command=%%PREFIX%%/sbin/swanctl
 	command_args="-rS -P ${pidfile} ${charon_command} --use-syslog"
 
-	start_cmd=strongswan_swanctl_start
-	start_postcmd="${swanctl} --load-all --noprompt"
-	reload_cmd="strongswan_swanctl --reload-settings" # non-rc.subr reload command
+	required_files=${charon_command}
+	extra_commands="reload statusall"
+
+	start_cmd=${name}_swanctl_start
+	start_postcmd="${swanctl_command} --load-all --noprompt"
+	reload_cmd="strongswan_swanctl --reload-settings"
 	reload_postcmd=$start_postcmd
-	status_cmd="strongswan_swanctl --stats" # non-rc.subr status command
+	status_cmd="strongswan_swanctl --stats"
 	statusall_cmd="strongswan_swanctl --stats --list-conns --list-sas"
 	;;
 
 *)
-	warn "\$strongswan_interface setting is invalid - supported options are \"stroke\" or \"vici\"."
+	# "default"
+	warn "\$strongswan_interface setting is invalid - options supported are \"stroke\" or \"vici\"."
 	exit 1
 	;;
 esac
@@ -93,7 +99,7 @@ strongswan_swanctl()
 	fi
 
 	for _c in $_commands; do
-		${swanctl} $_c
+		${swanctl_command} $_c
 	done
 }
 
