@@ -1,17 +1,23 @@
-# $FreeBSD$
 # strongSwan testing environment utility functions
-##
 
 . $(atf_get_srcdir)/../../../scripts/vnet.subr
 
 sst_init()
 {
-	if ! sysctl -q kern.features.ipsec >/dev/null ; then
-		atf_skip "This test requires ipsec"
-	fi
+	kldload -n ipsec
 
 	vnet_init
 
+	a_m_w_s_b
+}
+
+# https://github.com/strongswan/strongswan/blob/master/testing/images/umlArchitecture_large.png
+#
+# Topologies
+#
+# https://github.com/strongswan/strongswan/blob/master/testing/images/a-m-w-s-b.png
+a_m_w_s_b()
+{
 	sst_host_init
 	sst_alice_init
 	sst_bob_init
@@ -20,25 +26,34 @@ sst_init()
 	sst_winnetou_init
 }
 
+# Hosts
+#
+# https://github.com/strongswan/strongswan/tree/master/testing/hosts
+#
+# Host
 sst_host_init()
 {
-	ifconfig tap0 create
-	ifconfig tap1 create
-	ifconfig tap2 create
+	tap0=$(vnet_mktap)
+	tap1=$(vnet_mktap)
+	tap2=$(vnet_mktap)
 
-	ifconfig bridge0 create
-	ifconfig bridge1 create
-	ifconfig bridge2 create
+	test_br0=$(vnet_mkbridge)
+	test_br1=$(vnet_mkbridge)
+	test_br2=$(vnet_mkbridge)
 
-	ifconfig bridge0 name test-br0
-	ifconfig bridge1 name test-br1
-	ifconfig bridge2 name test-br2
+	ifconfig ${test_br0} name test-br0
+	ifconfig ${test_br1} name test-br1
+	ifconfig ${test_br2} name test-br2
+	sed -i '' -e "s/${test_br0}/test-br0/g" created_interfaces.lst
+	sed -i '' -e "s/${test_br1}/test-br1/g" created_interfaces.lst
+	sed -i '' -e "s/${test_br2}/test-br2/g" created_interfaces.lst
 
-	ifconfig test-br0 addm tap0 up
-	ifconfig test-br1 addm tap1 up
-	ifconfig test-br2 addm tap2 up
+	ifconfig test-br0 addm ${tap0} up
+	ifconfig test-br1 addm ${tap1} up
+	ifconfig test-br2 addm ${tap2} up
 }
 
+# Client Alice
 sst_alice_init()
 {
 	epair_alice_0=$(vnet_mkepair)
@@ -58,6 +73,7 @@ sst_alice_init()
 	ifconfig test-br0 addm ${epair_alice_1}b
 }
 
+# Client Bob
 sst_bob_init()
 {
 	epair_bob=$(vnet_mkepair)
@@ -71,6 +87,7 @@ sst_bob_init()
 	ifconfig test-br2 addm ${epair_bob}b
 }
 
+# Gateway Moon
 sst_moon_init()
 {
 	epair_moon_0=$(vnet_mkepair)
@@ -90,6 +107,7 @@ sst_moon_init()
 	ifconfig test-br1 addm ${epair_moon_1}b
 }
 
+# Gateway Sun
 sst_sun_init()
 {
 	epair_sun_0=$(vnet_mkepair)
@@ -109,6 +127,7 @@ sst_sun_init()
 	ifconfig test-br2 addm ${epair_sun_1}b
 }
 
+# Webserver Winnetou
 sst_winnetou_init()
 {
 	epair_winnetou=$(vnet_mkepair)
@@ -174,13 +193,5 @@ sst_v6_setup()
 
 sst_cleanup()
 {
-	ifconfig test-br0 destroy
-	ifconfig test-br1 destroy
-	ifconfig test-br2 destroy
-
-	ifconfig tap0 destroy
-	ifconfig tap1 destroy
-	ifconfig tap2 destroy
-
 	vnet_cleanup
 }

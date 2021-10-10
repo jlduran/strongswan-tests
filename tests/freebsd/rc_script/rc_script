@@ -1,5 +1,4 @@
-#! /usr/libexec/atf-sh
-# $FreeBSD$
+#!/usr/libexec/atf-sh
 
 : ${TMPDIR=/tmp}
 
@@ -25,11 +24,11 @@ stroke_body()
 	jexec moon sysrc strongswan_interface=stroke
 
 	# start (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check -s not-exit:0 \
 		-e match:"strongswan already running?" \
 		jexec moon service strongswan start
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# start (stopped)
 	atf_check \
@@ -134,6 +133,12 @@ vici_body()
 
 	cp $(atf_get_srcdir)/files/moon/etc/rc.d/strongswan ${TMPDIR}/strongswan
 	jexec moon mv ${TMPDIR}/strongswan /usr/local/etc/rc.d
+	jexec moon service strongswan stop > /dev/null 2>&1
+	jexec moon service strongswan stop > /dev/null 2>&1
+	jexec moon service strongswan stop > /dev/null 2>&1
+	jexec moon service strongswan stop > /dev/null 2>&1
+	jexec moon service strongswan stop > /dev/null 2>&1
+	jexec moon service strongswan stop > /dev/null 2>&1
 	jexec moon chmod 0555 /usr/local/etc/rc.d/strongswan
 
 	cp $(atf_get_srcdir)/files/moon/etc/swanctl/conf.d/dummy.conf \
@@ -144,98 +149,112 @@ vici_body()
 	jexec moon sysrc strongswan_interface=VICI
 
 	# start (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check -s not-exit:0 \
 		-e match:"strongswan already running?" \
 		jexec moon service strongswan start
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# start (stopped)
 	atf_check \
 		-o match:"Starting strongswan." \
 		-o match:"successfully loaded [[:digit:]]+ connections" \
-		-e match:"authorities found" \
-		-e match:"pools found" \
+		-o match:"authorities found" \
+		-o match:"pools found" \
 		jexec moon service strongswan start
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# stop (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"Stopping strongswan." \
 		-o match:"Waiting for PIDS" \
 		jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# stop (stopped)
 	atf_check -s not-exit:0 \
 		-e match:"strongswan not running?" \
 		jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# restart (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"Stopping strongswan." \
 		-o match:"Waiting for PIDS" \
 		-o match:"Starting strongswan." \
 		-o match:"successfully loaded [[:digit:]]+ connections" \
-		-e match:"authorities found" \
-		-e match:"pools found" \
+		-o match:"authorities found" \
+		-o match:"pools found" \
 		jexec moon service strongswan restart
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# restart (stopped)
 	atf_check \
+		-e match:"strongswan not running?" \
 		-o match:"Starting strongswan." \
 		-o match:"successfully loaded [[:digit:]]+ connections" \
-		-e match:"authorities found" \
-		-e match:"pools found" \
+		-o match:"authorities found" \
+		-o match:"pools found" \
 		jexec moon service strongswan restart
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# status (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"uptime" \
 		-o match:"worker threads" \
 		-o match:"loaded plugins" \
 		jexec moon service strongswan status
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# status (stopped)
 	atf_check -s not-exit:0 \
 		-e match:"strongswan not running?" \
 		jexec moon service strongswan status
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# statusall (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"uptime" \
 		-o match:"worker threads" \
 		-o match:"loaded plugins" \
 		jexec moon service strongswan statusall
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# statusall (stopped)
 	atf_check -s not-exit:0 \
 		-e match:"strongswan not running?" \
 		jexec moon service strongswan statusall
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# reload (started)
-	jexec moon service strongswan start
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	atf_check \
 		-o match:"successfully loaded [[:digit:]]+ connections" \
-		-e match:"authorities found" \
-		-e match:"pools found" \
+		-o match:"authorities found" \
+		-o match:"pools found" \
 		jexec moon service strongswan reload
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# reload (stopped)
 	atf_check -s not-exit:0 \
 		-e match:"strongswan not running?" \
 		jexec moon service strongswan reload
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 
 	# respawn charon process
-	jexec moon service strongswan start
+	#
+	# NB: this implies that the daemon gets supervised
+	# while this was true for the old stroke, it is
+	# not true for vici as it is at the moment.
+	# systemd-based systems supervise the process
+	# and respawn accordingly.
+	# This should be up for debate, nobody wants to loose
+	# their VPN connections.
+	jexec moon service strongswan start > /dev/null 2>&1 || true
 	jexec moon sleep 1
 	charon_pid=$(jexec moon cat /var/run/charon.pid)
 	jexec moon kill -9 $charon_pid
@@ -243,7 +262,7 @@ vici_body()
 	atf_check \
 		-o match:"/usr/local/libexec/ipsec/charon" \
 		jexec moon ps auxww
-	jexec moon service strongswan stop
+	jexec moon service strongswan stop > /dev/null 2>&1 || true
 }
 
 vici_cleanup()

@@ -1,9 +1,7 @@
 # $FreeBSD$
 
 freebsd_instance:
-  image: freebsd-12-0-release-amd64
-  cpu: 8
-  memory: 24G
+  image_family: freebsd-14-0-snap
 
 env:
   CIRRUS_CLONE_DEPTH: 1
@@ -11,7 +9,7 @@ env:
 task:
   timeout_in: 90m
   install_script:
-  - pkg install -qy kyua strongswan
+  - pkg install -qy strongswan
   # Uncomment the following lines and add the failing test in case of a
   # failing task
   #debug_script:
